@@ -1,0 +1,3358 @@
+---
+title: "Making plots for SNP Analysis"
+output: html_notebook
+---
+```{r installing pacakges}
+install.packages("readxl")
+install.packages("dplyr")
+install.packages("writexl")
+```
+
+
+```{r Chr4_manual_sat_1_h, fig.height=10, fig.width=20}
+###SNPs of highest sat_1_h Chr 4 Peak (Chr4_manual_sat_1_h)
+
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "Chr4_manual_sat_1_h")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_manual_sat_1_h)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:173,]
+
+#Change values to 0, 1, 2
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "13131369" = NA,
+  "13131370" = NA,
+  "13131375" = NA,
+  "13131378" = NA,
+  "13131379" = 5.4629,
+  "13131381" = NA,
+  "13131386" = NA,
+  "13131387" = NA,
+  "13131390" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "13131379" bold
+  title_text <- if (snp == "13131379") {
+    bquote(bold(.(snp)))  # Make SNP "13131379" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_1_h Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold")) 
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+```
+
+
+```{r Chr5_manual_sat_1_h, fig.height=10, fig.width=20}
+###SNPs of highest sat_1_h Chr 5 Peak (Chr5_manual_sat_1_h)
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "Chr5_manual_sat_1_h")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_manual_sat_1_h)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:173,]
+
+#Change values to 0, 1, 2
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "25789362" = 5.492
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "25789362" bold
+  title_text <- if (snp == "25789362") {
+    bquote(bold(.(snp)))  # Make SNP "25789362" bold
+  } else {
+    snp 
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_1_h Chr 5 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 1, top = custom_title)
+```
+
+
+```{r T1_Chr4_sat_1_31, fig.height=12, fig.width=20}
+###SNPs of highest sat_2_51 Chr 4 Peak (T1_Chr4_sat_1_31)
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T1_Chr4_sat_1_31")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_1_31)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:173,]
+
+#Change values to 0, 1, 2
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "98879393" = NA,
+  "98879395" = NA,
+  "98879397" = NA,
+  "98879398" = NA,
+  "98879401" = NA,
+  "98879403" = 6.7005,
+  "98879403" = NA,
+  "98879404" = NA,
+  "98879406" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF") 
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "98879403" bold
+  title_text <- if (snp == "98879403") {
+    bquote(bold(.(snp)))  # Make SNP "98879403" bold
+  } else {
+    snp  
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_1_31 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 4, top = custom_title)
+```
+
+
+```{r T1_Chr4_sat_1_49, fig.height=12, fig.width=20}
+###SNPs of highest sat_2_51 Chr 4 Peak (T1_Chr4_sat_1_49)
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T1_Chr4_sat_1_49")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_1_49)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:173,]
+
+#Change values to 0, 1, 2
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.) 
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "98879393" = NA,
+  "98879395" = NA,
+  "98879397" = NA,
+  "98879398" = NA,
+  "98879401" = NA,
+  "98879403" = 6.7005,
+  "98879403" = NA,
+  "98879404" = NA,
+  "98879406" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "98879403" bold
+  title_text <- if (snp == "98879403") {
+    bquote(bold(.(snp)))  # Make SNP "98879403" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12)) 
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_1_49 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 4, top = custom_title)
+```
+
+
+```{r T1_Chr4_sat_1_58, fig.height=12, fig.width=20}
+###SNPs of highest sat_2_51 Chr 4 Peak (T1_Chr4_sat_1_58)
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T1_Chr4_sat_1_58")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_1_58)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:173,]
+
+#Change values to 0, 1, 2
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "98879393" = NA,
+  "98879395" = NA,
+  "98879397" = NA,
+  "98879398" = NA,
+  "98879401" = NA,
+  "98879403" = 6.7005,
+  "98879403" = NA,
+  "98879404" = NA,
+  "98879406" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "98879403" bold
+  title_text <- if (snp == "98879403") {
+    bquote(bold(.(snp)))  # Make SNP "98879403" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) + 
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_1_58 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold")) 
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 4, top = custom_title)
+```
+
+
+```{r T1_Chr4_sat_1_67, fig.height=12, fig.width=20}
+###SNPs of highest sat_2_51 Chr 4 Peak (T1_Chr4_sat_1_67)
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T1_Chr4_sat_1_67")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_1_67)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:173,]
+
+#Change values to 0, 1, 2
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "98879393" = NA,
+  "98879395" = NA,
+  "98879397" = NA,
+  "98879398" = NA,
+  "98879401" = NA,
+  "98879403" = 6.7005,
+  "98879403" = NA,
+  "98879404" = NA,
+  "98879406" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "98879403" bold
+  title_text <- if (snp == "98879403") {
+    bquote(bold(.(snp)))  # Make SNP "98879403" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_1_67 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 4, top = custom_title)
+```
+
+
+```{r T2_Chr4_P1_sat_2_51, fig.height=20, fig.width=20}
+###SNPs of highest sat_2_51 Chr 4 Peak (T2_Chr4_P1_sat_2_51)
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+library(writexl)
+
+##Upload right file
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr4_P1_sat_2_51")
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_51)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "15134811" = NA,
+  "15134813" = NA,
+  "15134816" = NA,
+  "15134818" = NA,
+  "15134819" = 88516,
+  "15134821" = NA,
+  "15134827" = NA,
+  "15134830" = NA,
+  "15134841" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "15134819" bold
+  title_text <- if (snp == "15134819") {
+    bquote(bold(.(snp)))  # Make SNP "15134819" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) + 
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12)) 
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_2_51 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+```
+
+
+```{r T2_Chr4_P1_sat_2_60, fig.height=20, fig.width=20}
+###SNPs of highest sat_2_60 Chr 4 Peak (T2_Chr4_P1_sat_2_60)
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr4_P1_ sat_2_60")
+
+df <- Allele_Frequencies_graphs_and_tables
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_51)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "15134811" = NA,
+  "15134813" = NA,
+  "15134816" = NA,
+  "15134818" = NA,
+  "15134819" = 88516,
+  "15134821" = NA,
+  "15134827" = NA,
+  "15134830" = NA,
+  "15134841" = NA
+)
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "15134819" bold
+  title_text <- if (snp == "15134819") {
+    bquote(bold(.(snp)))  # Make SNP "15134819" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_2_60 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr4_P1_sat_2_78, fig.height=10, fig.width=20}
+###SNPs of highest sat_2_78 Chr 4 Peak (T2_Chr4_P1_sat_2_78)
+
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr4_P1_ sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "15134811" = NA,
+  "15134813" = NA,
+  "15134816" = NA,
+  "15134818" = NA,
+  "15134819" = 79609,
+  "15134821" = NA,
+  "15134827" = NA,
+  "15134830" = NA,
+  "15134841" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "15134819" bold
+  title_text <- if (snp == "15134819") {
+    bquote(bold(.(snp)))  # Make SNP "15134819" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_2_78 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title, row)
+
+
+```
+
+
+```{r T2_Chr4_P1_sat_2_78, fig.height=10, fig.width=20}
+###SNPs of highest sat_2_78 Chr 4 Peak (T2_Chr4_P1_sat_2_78)
+
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr4_P1_ sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "15134811" = NA,
+  "15134813" = NA,
+  "15134816" = NA,
+  "15134818" = NA,
+  "15134819" = 79609,
+  "15134821" = NA,
+  "15134827" = NA,
+  "15134830" = NA,
+  "15134841" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "15134819" bold
+  title_text <- if (snp == "15134819") {
+    bquote(bold(.(snp)))  # Make SNP "15134819" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_2_78 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title, row)
+
+
+```
+
+
+```{r T2_Chr4_P1_sat_2_87, fig.height=10, fig.width=20}
+###SNPs of highest sat_2_87 Chr 4 Peak (T2_Chr4_P1_sat_2_87)
+
+
+###Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr4_P1_sat_2_87")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_87)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "15134811" = NA,
+  "15134813" = NA,
+  "15134816" = NA,
+  "15134818" = NA,
+  "15134819" = 6.4288,
+  "15134821" = NA,
+  "15134827" = NA,
+  "15134830" = NA,
+  "15134841" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "15134819" bold
+  title_text <- if (snp == "15134819") {
+    bquote(bold(.(snp)))  # Make SNP "15134819" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.5, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of highest sat_2_87 Chr 4 Peak", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P1_sat_2_87, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P1_sat_2_87)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P1_sat_2_87")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_87)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "27532101" = NA,
+  "27532107" = NA,
+  "27532116" = NA,
+  "27532117" = NA,
+  "27532127" = 8.4884,
+  "27532134" = NA,
+  "27532140" = NA,
+  "27532149" = NA,
+  "27532167" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "27532127" bold
+  title_text <- if (snp == "27532127") {
+    bquote(bold(.(snp)))  # Make SNP "27532127" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of first Peak in sat_2_87 Chr 9", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P1.2_sat_2_60, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P1.2_sat_2_60)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P1.2_sat_2_60")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_60)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "31430955" = NA,
+  "31430957" = NA,
+  "31430969" = NA,
+  "31430979" = NA,
+  "31430988" = 6.1052,
+  "31431002" = NA,
+  "31431027" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "31430988" bold
+  title_text <- if (snp == "31430988") {
+    bquote(bold(.(snp)))  # Make SNP "31430988" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of second Peak on Chr 9 in sat_2_60", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P1.2_sat_2_78, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P1.2_sat_2_78)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P1.2_sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "31430955" = NA,
+  "31430957" = NA,
+  "31430969" = NA,
+  "31430979" = NA,
+  "31430988" = 8.899,
+  "31431002" = NA,
+  "31431027" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "31430988" bold
+  title_text <- if (snp == "31430988") {
+    bquote(bold(.(snp)))  # Make SNP "31430988" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of second Peak on Chr 9 in sat_2_78", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P1.2_sat_2_87, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P1.2_sat_2_87)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P1.2_sat_2_87")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_87)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "31430955" = NA,
+  "31430957" = NA,
+  "31430969" = NA,
+  "31430979" = NA,
+  "31430988" = 8.2839,
+  "31431002" = NA,
+  "31431027" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "31430988" bold
+  title_text <- if (snp == "31430988") {
+    bquote(bold(.(snp)))  # Make SNP "31430988" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of second Peak on Chr 9 in sat_2_87", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 5, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P1.3_sat_2_78, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P1.3_sat_2_78)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P1.3_sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "32058171" = 8.6835,
+  "32058184" = NA,
+  "32058208" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "32058171" bold
+  title_text <- if (snp == "32058171") {
+    bquote(bold(.(snp)))  # Make SNP "32058171" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of third Peak on Chr 9 in sat_2_78", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P1.3_sat_2_87, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P1.3_sat_2_87)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P1.3_sat_2_87")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_87)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "32058171" = 8.6835,
+  "32058184" = NA,
+  "32058208" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "32058171" bold
+  title_text <- if (snp == "32058171") {
+    bquote(bold(.(snp)))  # Make SNP "32058171" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of third Peak on Chr 9 in sat_2_87", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P2_sat_2_78, fig.height=10, fig.width=20}
+#SNPs of second highest sat_2_51 Chr 4 Peak (T2_Chr9_P2_sat_2_78)
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P2_sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    . == "./."~ NA,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "34981606" = NA,
+  "34981616" = NA,
+  "34981633" = NA,
+  "34981635" = NA,
+  "34981642" = 8.899,
+  "34981651" = NA,
+  "34981694" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "34981642" bold
+  title_text <- if (snp == "34981642") {
+    bquote(bold(.(snp)))  # Make SNP "34981642" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of fourth Peak on Chr 9 in sat_2_78", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P2_sat_2_87, fig.height=10, fig.width=20}
+#T2_Chr9_P2_sat_2_87
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P2_sat_2_87")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_87)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "34981606" = NA,
+  "34981616" = NA,
+  "34981633" = NA,
+  "34981635" = NA,
+  "34981642" = 8.2839,
+  "34981651" = NA,
+  "34981694" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "34981642" bold
+  title_text <- if (snp == "34981642") {
+    bquote(bold(.(snp)))  # Make SNP "34981642" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of fourth Peak on Chr 9 in sat_2_87", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P2.2_sat_2_60, fig.height=10, fig.width=20}
+#T2_Chr9_P2.2_sat_2_60
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P2.2_sat_2_60")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_60)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "35386550" = NA,
+  "35386570" = NA,
+  "35386592" = 6.5098,
+  "35386601" = NA,
+  "35386602" = NA,
+  "35386622" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "35386592" bold
+  title_text <- if (snp == "35386592") {
+    bquote(bold(.(snp)))  # Make SNP "35386592" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of fifth Peak on Chr 9 in sat_2_60", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P2.2_sat_2_78, fig.height=10, fig.width=20}
+#T2_Chr9_P2.2_sat_2_78
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P2.2_sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "35386550" = NA,
+  "35386570" = NA,
+  "35386592" = 8.6835,
+  "35386601" = NA,
+  "35386602" = NA,
+  "35386622" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "35386592" bold
+  title_text <- if (snp == "35386592") {
+    bquote(bold(.(snp)))  # Make SNP "35386592" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of fifth Peak on Chr 9 in sat_2_78", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr9_P2.2_sat_2_87, fig.height=10, fig.width=20}
+#T2_Chr9_P2.2_sat_2_87
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr9_P2.2_sat_2_87")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_87)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "35386550" = NA,
+  "35386570" = NA,
+  "35386592" = 8.2622,
+  "35386601" = NA,
+  "35386602" = NA,
+  "35386622" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "35386592" bold
+  title_text <- if (snp == "35386592") {
+    bquote(bold(.(snp)))  # Make SNP "35386592" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of fifth Peak on Chr 9 in sat_2_87", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr7_P1_sat_2_51, fig.height=12, fig.width=20}
+#T2_Chr7_P1_sat_2_51
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr7_P1_sat_2_51")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_51)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "164522113" = NA,
+  "164522114" = NA,
+  "164522116" = NA,
+  "164522119" = NA,
+  "164522122" = 6.5694,
+  "164522124" = NA,
+  "164522128" = NA,
+  "164522129" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "164522122" bold
+  title_text <- if (snp == "164522122") {
+    bquote(bold(.(snp)))  # Make SNP "164522122" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of Peak on Chr 7 in sat_2_51", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr7_P1_sat_2_60, fig.height=12, fig.width=20}
+#T2_Chr7_P1_sat_2_60
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr7_P1_sat_2_60")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_60)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "164522113" = NA,
+  "164522114" = NA,
+  "164522116" = NA,
+  "164522119" = NA,
+  "164522122" = 6.9323,
+  "164522124" = NA,
+  "164522128" = NA,
+  "164522129" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "164522122" bold
+  title_text <- if (snp == "164522122") {
+    bquote(bold(.(snp)))  # Make SNP "164522122" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of Peak on Chr 7 in sat_2_60", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
+
+```{r T2_Chr7_P1_sat_2_78, fig.height=12, fig.width=20}
+#T2_Chr7_P1_sat_2_78
+
+
+#Import data + cleaning
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(rlang)
+library(grid)
+library(readxl)
+
+df <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Allele Frequencies graphs and tables.xlsx", sheet = "T2_Chr7_P1_sat_2_78")
+
+
+df <- df %>%
+  rename(Phenotypic_value = iTB_quant_sat_2_78)
+
+# Remove rows with any NA values
+df <- df %>% filter(Phenotypic_value != "na")
+df <- df[1:175,]
+
+#Change values to 0, 1, 2
+
+df <- df %>%
+  mutate(across(-c(Trait_ID, Phenotypic_value), ~ case_when(
+    . == "0/0" ~ 0,
+    . == "0|0" ~ 0,
+    . == "0|1" ~ 1,
+    . == "0/1" ~ 1,
+    . == "1/0" ~ 1,
+    . == "1|0" ~ 1,
+    . == "1/1" ~ 2,
+    . == "1|1" ~ 2,
+    . == "45292" ~ 2,
+    TRUE ~ as.numeric(.)  # Keep the original value if none match
+  )))
+
+# Convert all columns to character
+df[] <- lapply(df, as.character)
+df$Phenotypic_value = as.numeric(df$Phenotypic_value)
+
+#If you want to change one value in one position:
+# Change the value at row 2, column 3
+#df[2, 3] <- 0
+
+#df[16, 6] <- 0
+
+#How to change column names: 
+#colnames(df) <- c("Trait_ID", "Phenotypic_value", "4.15134819", "4.18416013", "4.19402912", "4.25201399")
+
+
+#Making the plots:
+colnames (df)
+# Define SNP names and their corresponding p-values, without using backticks in the list
+snp_info <- list(
+  "164469737" = NA,
+  "164469742" = NA,
+  "164469743" = NA,
+  "164469747" = NA,
+  "164469752" = 9.0864,
+  "164469754" = NA,
+  "164469755" = NA,
+  "164469762" = NA
+)
+
+
+
+plots <- list()
+
+# Create a new column for point color
+df$point_color <- ifelse(df$Trait_ID %in% c("LK046", "LK047", "LK055", "LK080", "LK087", "LK093", "LK113", "LK125", "LK142"), "green", 
+                  ifelse(df$Trait_ID %in% c("LK020", "LK051", "LK062", "LK077","LK082", "LK089",  "LK124", "LK147", "LK148"), "red", "black"))
+
+df$point_alpha <- ifelse(df$Trait_ID %in% c("LK046", "LK093", "LK113","LK051", "LK077", "LK124"), 1, 0.5)
+
+# Define a color palette for SNP values 0, 1, and 2
+allele_colors <- c("0" = "#33CC66", "1" = "#FF9999", "2" = "#66CCFF")  # Customize colors as needed
+
+
+
+# Iterate over each SNP column and generate plots
+for (snp in names(snp_info)) {
+  # Wrap the SNP name with backticks for use in ggplot2
+  snp_escaped <- paste0("`", snp, "`")
+  
+  # Get the corresponding p-value
+  pvalue <- snp_info[[snp]]
+  
+  # Check if pvalue is NA and set subtitle accordingly
+  subtitle_text <- ifelse(is.na(pvalue), "No p-value", paste("LOD:", pvalue))
+  
+  # Calculate allele status counts for each SNP (for levels 0, 1, 2)
+  allele_counts <- as.data.frame(table(df[[snp]]))
+  colnames(allele_counts) <- c("Allele", "Count")
+  
+  # Modify title text: make "164469752" bold
+  title_text <- if (snp == "164469752") {
+    bquote(bold(.(snp)))  # Make SNP "164469752" bold
+  } else {
+    snp  # Keep other SNPs normal
+  }
+  
+  # Create the plot
+  p <- ggplot(df, aes_string(x = snp_escaped, y = df$Phenotypic_value)) + 
+    geom_boxplot(aes_string(fill = snp_escaped)) + 
+    geom_jitter(width = 0.1, aes(color = point_color, alpha = point_alpha), height = 0) +
+   
+    # Add allele counts with a white background
+    geom_label(data = allele_counts, 
+               aes(x = Allele, y = max(df$Phenotypic_value, na.rm = TRUE) + 1, label = Count), 
+               vjust = 3, size = 4, fill = "white", color = "black", label.size = 0.5) +  # Adjust the border thickness with label.size
+    
+    labs(title = title_text, subtitle = subtitle_text, 
+         x = "Allele status", y = "Phenotype value", fill = "Allele status") +
+    scale_fill_manual(values = allele_colors) +
+    scale_color_manual(values = c("green" = "green", "red" = "red"), 
+                       labels = c("green" = "Tolerant accessions", 
+                                  "red" = "Sensitive accessions")) +  #     Customize legend
+    #Adjust legend:
+    guides(color = guide_legend(title = "")) + 
+    guides(fill = "none", alpha = "none") + 
+    scale_alpha(range = c(0.7, 1)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "plain", size = 12))  # Use plain text as the default style
+  
+  # Store the plot in the list
+  plots[[snp_escaped]] <- p
+}
+
+# Custom title for all plots
+custom_title <- textGrob("SNPs of Peak on Chr 7 in sat_2_78", 
+                         gp = gpar(fontsize = 16, fontface = "bold"))  # Adjust fontsize and fontface
+
+# Arrange and display the plots
+grid.arrange(grobs = plots, ncol = 3, top = custom_title)
+
+
+```
+
