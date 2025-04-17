@@ -1,0 +1,508 @@
+---
+title: "Expression graphs"
+author: "Mara Krenn"
+date: "2025-02-05"
+output: word_document
+---
+
+```{r Packages}
+# Install ggpattern if not already installed
+install.packages("ggpattern")
+# Install the latest version of rlang
+install.packages("rlang")
+
+
+# Load necessary libraries
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(ggpattern)
+
+```
+
+
+```{r Chr4 LK089}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 1)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+#Remove rows with Expression 1
+data_long <- data_long %>%
+  mutate(Expression = na_if(Expression, 0.00000000))
+
+data_long <- na.omit(data_long)
+
+# Remove rows where Expression is below 1
+data_long <- data_long %>% filter(Expression >= 1)
+
+# Calculate mean and standard deviation for each group
+summary_data <- data_long %>%
+  group_by(Genes, Treatment, Timepoint) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE),
+    SD = sd(Expression, na.rm = TRUE),
+    SE = SD / sqrt(n()),  # Standard Error
+    .groups = "drop"
+  )
+
+#Remove gene LOC111886222 because of very low expression:
+summary_data <- summary_data %>% filter(Genes != "LOC111886222")
+
+#Change timepoints:
+summary_data <- summary_data %>%
+  mutate(Timepoint = recode(Timepoint,
+    "02" = "10 DAS",
+    "03" = "11 DAS",
+    "06" = "14 DAS",
+    "08" = "16 DAS",
+    "14" = "22 DAS"
+  ))
+
+#Changing treatment names
+summary_data <- summary_data %>%
+  mutate(Treatment = recode(Treatment,
+    "Co" = "Control",
+    "LC" = "Low Calcium"
+  ))
+
+# Create the plot
+Expression_Plot <- ggplot(summary_data, aes(x = Genes, y = Mean_Expression, fill = Timepoint)) +
+  geom_bar(stat = "identity", position = position_dodge(preserve = "single"), 
+           width = 0.7) + 
+  geom_errorbar(aes(ymin = Mean_Expression - SD, ymax = Mean_Expression + SD), 
+                position = position_dodge(width = 0.7), width = 0.2) +  
+  labs(x = "Genes", y = "Expression (RPKM)", fill = "Timepoint") +  
+  ggtitle("Gene Expression Levels Chr4 LK089") +
+  ylim( 0, 300) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  facet_wrap(~Treatment, ncol = 1) 
+
+Expression_Plot
+
+# Save as PNG (for reports)
+  ggsave(plot = Expression_Plot,
+         filename = "Expression_Plot_Chr4_LK89.png",
+         width = 32, height = 16, units = "cm", dpi = 300)
+
+```
+
+```{r Chr4 LK093}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 2)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+#Remove rows with Expression 1
+data_long <- data_long %>%
+  mutate(Expression = na_if(Expression, 0.00000000))
+
+data_long <- na.omit(data_long)
+
+# Remove rows where Expression is below 1
+data_long <- data_long %>% filter(Expression >= 1)
+
+# Calculate mean and standard deviation for each group
+summary_data <- data_long %>%
+  group_by(Genes, Treatment, Timepoint) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE),
+    SD = sd(Expression, na.rm = TRUE),
+    SE = SD / sqrt(n()),  # Standard Error
+    .groups = "drop"
+  )
+
+#Remove gene LOC111886171 because of very low expression:
+summary_data <- summary_data %>% filter(Genes != "LOC111886171")
+
+#Remove gene LOC111886222 because of very low expression:
+summary_data <- summary_data %>% filter(Genes != "LOC111886222")
+
+#Change timepoints:
+summary_data <- summary_data %>%
+  mutate(Timepoint = recode(Timepoint,
+    "02" = "10 DAS",
+    "03" = "11 DAS",
+    "06" = "14 DAS",
+    "08" = "16 DAS",
+    "14" = "22 DAS"
+  ))
+
+#Changing treatment names
+summary_data <- summary_data %>%
+  mutate(Treatment = recode(Treatment,
+    "Co" = "Control",
+    "LC" = "Low Calcium"
+  ))
+
+# Create the plot
+Expression_Plot <- ggplot(summary_data, aes(x = Genes, y = Mean_Expression, fill = Timepoint)) +
+  geom_bar(stat = "identity", position = position_dodge(preserve = "single"), 
+           width = 0.7) + 
+  geom_errorbar(aes(ymin = Mean_Expression - SD, ymax = Mean_Expression + SD), 
+                position = position_dodge(width = 0.7), width = 0.2) +  
+  labs(x = "Genes", y = "Expression (RPKM)", fill = "Timepoint") +  
+  ggtitle("Gene Expression Levels Chr4 LK093") +
+  ylim( 0, 300) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  facet_wrap(~Treatment, ncol = 1) 
+
+Expression_Plot
+
+# Save as PNG (for reports)
+  ggsave(plot = Expression_Plot,
+         filename = "Expression_Plot_Chr4_LK93.png",
+         width = 32, height = 16, units = "cm", dpi = 300)
+
+```
+
+
+```{r Chr7 LK089}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 3)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+#Remove rows with Expression 1
+data_long <- data_long %>%
+  mutate(Expression = na_if(Expression, 0.00000000))
+
+data_long <- na.omit(data_long)
+
+# Remove rows where Expression is below 1
+data_long <- data_long %>% filter(Expression >= 1)
+
+# Calculate mean and standard deviation for each group
+summary_data <- data_long %>%
+  group_by(Genes, Treatment, Timepoint) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE),
+    SD = sd(Expression, na.rm = TRUE),
+    SE = SD / sqrt(n()),  # Standard Error
+    .groups = "drop"
+  )
+
+#Change timepoints:
+summary_data <- summary_data %>%
+  mutate(Timepoint = recode(Timepoint,
+    "02" = "10 DAS",
+    "03" = "11 DAS",
+    "06" = "14 DAS",
+    "08" = "16 DAS",
+    "14" = "22 DAS"
+  ))
+
+#Changing treatment names
+summary_data <- summary_data %>%
+  mutate(Treatment = recode(Treatment,
+    "Co" = "Control",
+    "LC" = "Low Calcium"
+  ))
+
+# Create the plot
+Expression_Plot <- ggplot(summary_data, aes(x = Genes, y = Mean_Expression, fill = Timepoint)) +
+  geom_bar(stat = "identity", position = position_dodge(preserve = "single"), 
+           width = 0.7) + 
+  geom_errorbar(aes(ymin = Mean_Expression - SD, ymax = Mean_Expression + SD), 
+                position = position_dodge(width = 0.7), width = 0.2) +  
+  labs(x = "Genes", y = "Expression (RPKM)", fill = "Timepoint") +  
+  ggtitle("Gene Expression Levels Chr7 LK089") +
+  ylim( 0, 300) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  facet_wrap(~Treatment, ncol = 1) 
+
+Expression_Plot
+
+# Save as PNG (for reports)
+  ggsave(plot = Expression_Plot,
+         filename = "Expression_Plot_Chr7_LK89.png",
+         width = 32, height = 16, units = "cm", dpi = 300)
+
+```
+
+
+
+
+```{r Chr7 LK093}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 4)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+#Remove rows with Expression 1
+data_long <- data_long %>%
+  mutate(Expression = na_if(Expression, 0.00000000))
+
+data_long <- na.omit(data_long)
+
+# Remove rows where Expression is below 1
+data_long <- data_long %>% filter(Expression >= 1)
+
+# Calculate mean and standard deviation for each group
+summary_data <- data_long %>%
+  group_by(Genes, Treatment, Timepoint) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE),
+    SD = sd(Expression, na.rm = TRUE),
+    SE = SD / sqrt(n()),  # Standard Error
+    .groups = "drop"
+  )
+
+#Change timepoints:
+summary_data <- summary_data %>%
+  mutate(Timepoint = recode(Timepoint,
+    "02" = "10 DAS",
+    "03" = "11 DAS",
+    "06" = "14 DAS",
+    "08" = "16 DAS",
+    "14" = "22 DAS"
+  ))
+
+#Changing treatment names
+summary_data <- summary_data %>%
+  mutate(Treatment = recode(Treatment,
+    "Co" = "Control",
+    "LC" = "Low Calcium"
+  ))
+
+# Create the plot
+Expression_Plot <- ggplot(summary_data, aes(x = Genes, y = Mean_Expression, fill = Timepoint)) +
+  geom_bar(stat = "identity", position = position_dodge(preserve = "single"), 
+           width = 0.7) + 
+  geom_errorbar(aes(ymin = Mean_Expression - SD, ymax = Mean_Expression + SD), 
+                position = position_dodge(width = 0.7), width = 0.2) +  
+  labs(x = "Genes", y = "Expression (RPKM)", fill = "Timepoint") +  
+  ggtitle("Gene Expression Levels Chr7 LK093") +
+  ylim ( 0, 300) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  facet_wrap(~Treatment, ncol = 1) 
+
+Expression_Plot
+
+# Save as PNG (for reports)
+  ggsave(plot = Expression_Plot,
+         filename = "Expression_Plot_Chr7_LK93.png",
+         width = 32, height = 16, units = "cm", dpi = 300)
+
+
+```
+
+```{r Chr4 LK093 mean expressions of genes over time}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 2)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+# Compute Mean Expression per Gene & Treatment
+gene_summary <- data_long %>%
+  group_by(Genes, Treatment) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE)  # ✅ Mean across all timepoints & replicates
+  ) %>%
+  pivot_wider(names_from = Treatment, values_from = Mean_Expression, 
+              names_prefix = "Mean_Expression_")  # ✅ Reshape to one row per gene
+
+# Compute Standard Deviation Across All Replicates & Timepoints for Each Gene
+sd_summary <- data_long%>%
+  group_by(Genes) %>%
+  summarise(SD = sd(Expression, na.rm = TRUE))  # ✅ One SD per gene
+
+# Merge Mean Expression Table & SD Table
+final_summary <- left_join(gene_summary, sd_summary, by = "Genes")
+
+print(final_summary)
+
+write.csv(final_summary, "Gene_Expression_Summary_Chr4_93.csv", row.names = FALSE)
+
+```
+
+
+
+```{r Chr4 LK089 mean expressions of genes over time}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 1)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+# Compute Mean Expression per Gene & Treatment
+gene_summary <- data_long %>%
+  group_by(Genes, Treatment) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE)  # ✅ Mean across all timepoints & replicates
+  ) %>%
+  pivot_wider(names_from = Treatment, values_from = Mean_Expression, 
+              names_prefix = "Mean_Expression_")  # ✅ Reshape to one row per gene
+
+# Compute Standard Deviation Across All Replicates & Timepoints for Each Gene
+sd_summary <- data_long%>%
+  group_by(Genes) %>%
+  summarise(SD = sd(Expression, na.rm = TRUE))  # ✅ One SD per gene
+
+# Merge Mean Expression Table & SD Table
+final_summary <- left_join(gene_summary, sd_summary, by = "Genes")
+
+print(final_summary)
+
+write.csv(final_summary, "Gene_Expression_Summary_Chr4_89.csv", row.names = FALSE)
+
+```
+
+```{r Chr7 LK089 mean expressions of genes over time}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 3)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+# Compute Mean Expression per Gene & Treatment
+gene_summary <- data_long %>%
+  group_by(Genes, Treatment) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE)  # ✅ Mean across all timepoints & replicates
+  ) %>%
+  pivot_wider(names_from = Treatment, values_from = Mean_Expression, 
+              names_prefix = "Mean_Expression_")  # ✅ Reshape to one row per gene
+
+# Compute Standard Deviation Across All Replicates & Timepoints for Each Gene
+sd_summary <- data_long%>%
+  group_by(Genes) %>%
+  summarise(SD = sd(Expression, na.rm = TRUE))  # ✅ One SD per gene
+
+# Merge Mean Expression Table & SD Table
+final_summary <- left_join(gene_summary, sd_summary, by = "Genes")
+
+print(final_summary)
+
+write.csv(final_summary, "Gene_Expression_Summary_Chr7_89.csv", row.names = FALSE)
+
+```
+
+```{r Chr7 LK093 mean expressions of genes over time}
+# Read in the Excel data (replace with your file path)
+data <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Genes/Expression data/Expression data organised.xlsx", sheet = 4)
+
+# Extract the relevant information from the column names
+colnames(data) <- gsub("\\.", "_", colnames(data))  # Replace dots with underscores for easier handling
+
+# Assuming the first column is the Gene column, we ensure it's treated properly in reshaping
+data_long <- data %>%
+  gather(key = "Sample", value = "Expression", -Genes) %>%  # Keep the Gene column in the long format
+  mutate(
+    Accession = str_extract(Sample, "^[^_]+"),  # Extracts the accession part (e.g., LK089)
+    Treatment = str_extract(Sample, "(?<=_)Co|LC"),  # Extracts treatment part (either Co or LC)
+    Timepoint = str_extract(Sample, "(?<=D)\\d{2}"),  # Extracts the timepoint (e.g., 02, 03, etc.)
+    Replicate = str_extract(Sample, "(?<=R)\\d"),  # Extracts the replicate (e.g., 1, 2, 3)
+    Date = str_extract(Sample, "\\d{8}$")  # Extracts the date (optional)
+  )
+
+# Compute Mean Expression per Gene & Treatment
+gene_summary <- data_long %>%
+  group_by(Genes, Treatment) %>%
+  summarise(
+    Mean_Expression = mean(Expression, na.rm = TRUE)  # ✅ Mean across all timepoints & replicates
+  ) %>%
+  pivot_wider(names_from = Treatment, values_from = Mean_Expression, 
+              names_prefix = "Mean_Expression_")  # ✅ Reshape to one row per gene
+
+# Compute Standard Deviation Across All Replicates & Timepoints for Each Gene
+sd_summary <- data_long%>%
+  group_by(Genes) %>%
+  summarise(SD = sd(Expression, na.rm = TRUE))  # ✅ One SD per gene
+
+# Merge Mean Expression Table & SD Table
+final_summary <- left_join(gene_summary, sd_summary, by = "Genes")
+
+print(final_summary)
+
+write.csv(final_summary, "Gene_Expression_Summary_Chr7_93.csv", row.names = FALSE)
+
+```
