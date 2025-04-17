@@ -1,0 +1,237 @@
+
+#Data: 
+/lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz
+
+
+vcftools --gzvcf /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz --chr NC_056626.1  --from-bp 98869403 --to-bp 98889403 --hap-r2 --out test & 
+
+
+#->did not work, try PLINK:
+#Extracting VCF files:
+bcftools view -r NC_056626.1:15094819-15174819 -l 200 /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -o extracted_region_NC_056626.1_15094819-15174819.vcf
+
+
+plink --vcf extracted_region_NC_056626.1_15094819-15174819.vcf --allow-extra-chr --recode --out output
+
+plink --file output --allow-extra-chr --r2 --ld-snp <target_snp> --ld-window-kb 1000 --ld-window 99999 --ld-window-r2 0.2 --out ld_results 
+
+###IT WORKED, yeiiiii
+
+###Now to automize it:
+#!/bin/bash
+
+# Input VCF file
+input_vcf="/lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz"
+
+# Regions file: Each line should be in the format: <chromosome>:<start>-<end>
+regions_file="regions.txt"
+
+# Output directory
+output_dir="ld_results"
+mkdir -p $output_dir
+
+# Loop through regions and process them
+while read region; do
+    # Generate filenames based on the region
+    region_name=$(echo $region | tr ':' '_' | tr '-' '_')
+    extracted_vcf="extracted_region_${region_name}.vcf"
+    plink_output="plink_${region_name}"
+    ld_output="${output_dir}/ld_results_${region_name}"
+
+    # Extract region from VCF
+    bcftools view -r $region $input_vcf -o $extracted_vcf
+
+    # Convert VCF to PLINK format
+    plink --vcf $extracted_vcf --allow-extra-chr --recode --out $plink_output
+
+    # Calculate LD
+    plink --file $plink_output --allow-extra-chr --r2 --ld-window-kb 1000 --ld-window 99999 --ld-window-r2 0.2 --out $ld_output
+
+    echo "Processed region: $region"
+
+done < $regions_file
+
+echo "All regions processed!"
+
+###Updated try on 9.12.:
+
+# Input VCF file
+input_vcf="/lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz"
+
+# Regions file: Each line should be in the format: <chromosome>:<start>-<end>
+regions_file="regions.txt"
+
+# Output directory
+output_dir="ld_results"
+mkdir -p $output_dir
+
+# Loop through regions and process them
+while read region; do
+    # Generate filenames based on the region
+    region_name=$(echo $region | tr ':' '_' | tr '-' '_')
+    extracted_vcf="extracted_region_${region_name}.vcf"
+    first_200_vcf="first_200_${region_name}.vcf"
+    plink_output="plink_${region_name}"
+    ld_output="${output_dir}/ld_results_${region_name}"
+
+    # Extract region from VCF
+    bcftools view -r $region $input_vcf -o $extracted_vcf
+
+    # Extract only the first 200 variants
+    bcftools view -H $extracted_vcf | head -n 200 > first_200_variants.txt
+    bcftools view -T first_200_variants.txt $extracted_vcf -o $first_200_vcf
+
+    # Convert VCF to PLINK format
+    plink --vcf $first_200_vcf --allow-extra-chr --recode --out $plink_output
+
+    # Calculate LD
+    plink --file $plink_output --allow-extra-chr --ld-snp <target_snp> --r2 --ld-window-kb 1000 --ld-window 99999 --ld-window-r2 0.2 --out $ld_output
+
+    echo "Processed region: $region (first 200 variants)"
+
+done < $regions_file
+
+echo "All regions processed!"
+
+# Regions file: Each line should be in the format: <chromosome>:<start>-<end> <target_snp>
+regions_file="regions.txt"
+
+# Output directory
+output_dir="ld_results"
+mkdir -p $output_dir
+
+# Loop through regions and process them
+while read region target_snp; do
+    # Generate filenames based on the region
+    region_name=$(echo $region | tr ':' '_' | tr '-' '_')
+    extracted_vcf="extracted_region_${region_name}.vcf"
+    first_200_vcf="first_200_${region_name}.vcf"
+    plink_output="plink_${region_name}"
+    ld_output="${output_dir}/ld_results_${region_name}"
+
+    # Extract region from VCF
+    bcftools view -r $region $input_vcf -o $extracted_vcf
+
+    # Extract only the first 200 variants
+    bcftools view -H $extracted_vcf | head -n 200 > first_200_variants.txt
+    bcftools view -T first_200_variants.txt $extracted_vcf -o $first_200_vcf
+
+    # Convert VCF to PLINK format
+    plink --vcf $first_200_vcf --allow-extra-chr --recode --out $plink_output
+
+    # Calculate LD
+    plink --file $plink_output --allow-extra-chr --ld-snp $target_snp --r2 --out $ld_output
+
+    echo "Processed region: $region with target SNP: $target_snp (first 200 variants)"
+
+done < $regions_file
+
+echo "All regions processed!"
+
+###Loop did not work so now for all the regions:
+
+####Only first 200 variants:
+###NC_056626.1:15094819-15174819 15134819
+bcftools view -r NC_056626.1:15094819-15174819 -S samples.txt //lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056626.1_15094819-15174819.vcf.gz
+
+
+plink --vcf extracted_region_NC_056626.1_15094819-15174819.vcf.gz --allow-extra-chr --recode --out output_chr4_t1
+
+nano output_chr4_t1.map ###changhe SNP ID
+
+plink --file output_chr4_t1 --allow-extra-chr --r2 --ld-snp 15134819 --ld-window 9999999 --out ld_results_NC_056626.1_15094819-15174819
+
+
+
+###NC_056626.1:98839403-98919403 98879403:
+bcftools view -r NC_056626.1:98839403-98919403 -S samples.txt //lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056626.1_98839403-98919403.vcf.gz
+
+bcftools index extracted_region_NC_056626.1_98839403-98919403.vcf.gz
+
+
+plink --vcf extracted_region_NC_056626.1_98839403-98919403.vcf.gz --allow-extra-chr --recode --out output_chr4_t2
+
+Nano output_chr4_t2.map
+
+plink --file output_chr4_t2 --allow-extra-chr --r2 --ld-snp 98879403 --ld-window 9999999 --out ld_results_NC_056626.1_98839403-98919403
+
+
+###NC_056629.1:164429752-164509752 164469752
+bcftools view -r NC_056629.1:164429752-164509752 -S samples.txt //lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056629.1_164429752-164509752.vcf.gz
+
+bcftools index extracted_region_NC_056629.1_164429752-164509752.vcf.gz
+
+
+plink --vcf extracted_region_NC_056629.1_164429752-164509752.vcf.gz --allow-extra-chr --recode --out output
+
+###Change snp id (.) in nano output.map to the right SNP_ID
+
+plink --file output --allow-extra-chr --r2 --ld-snp 164469752 --ld-window 9999999 --out ld_results_NC_056629.1_164429752-164509752
+
+
+###NC_056631.1:31390988-31470988 31430988:
+bcftools view -r NC_056631.1:31390988-31470988 -S samples.txt //lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056631.1_31390988-31470988.vcf.gz
+
+bcftools index extracted_region_NC_056631.1_31390988-31470988.vcf.gz
+
+plink --vcf extracted_region_NC_056631.1_31390988-31470988.vcf.gz --allow-extra-chr --recode --out output_chr9_t2
+
+Nano output_chr9_t2.map
+
+plink --file output_chr9_t2 --allow-extra-chr --r2 --ld-snp 31430988 --ld-window 9999999 --out ld_results_NC_056631.1_31390988-31470988
+
+
+###NC_056629.1:164389752-164549752 164469752:
+bcftools view -r NC_056629.1:164389752-164549752 -S samples.txt //lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056629.1:164389752-164549752.vcf.gz
+
+bcftools index extracted_region_NC_056629.1:164389752-164549752.vcf.gz
+
+plink --vcf extracted_region_NC_056629.1:164389752-164549752.vcf.gz --allow-extra-chr --recode --out output_chr7_2
+
+nano output_chr7_2.map
+
+plink --file output_chr7_2 --allow-extra-chr --r2 --ld-snp 164469752 --ld-window 9999999 --out ld_results_NC_056629.1:164389752-164549752
+
+
+###1.5 Mbp: NC_056629.1:163719752-165219752 164469752
+
+bcftools view -r NC_056629.1:163719752-165219752 -S samples.txt //lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056629.1:163719752-165219752.vcf.gz
+
+bcftools index extracted_region_NC_056629.1:163719752-165219752.vcf.gz
+
+plink --vcf extracted_region_NC_056629.1:163719752-165219752.vcf.gz --allow-extra-chr --recode --out output_chr7_2
+
+nano output_chr7_2.map
+
+plink --file output_chr7_2 --allow-extra-chr --maf 0.05 --make-bed --out output_chr7_2_filtered
+
+plink --bfile output_chr7_2_filtered --allow-extra-chr --r2 --ld-snp 164469752 --ld-window 9999999 --out ld_results_chr7_2_filtered
+
+
+
+###1.5 Mbp: NC_056626.1:98129403-99629403 98879403
+
+bcftools view -r NC_056626.1:98129403-99629403  -S samples.txt /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056626.1:98129403-99629403.vcf.gz
+
+bcftools index extracted_region_NC_056626.1:98129403-99629403.vcf.gz
+
+plink --vcf extracted_region_NC_056626.1:98129403-99629403.vcf.gz --allow-extra-chr --recode --out output_chr4_T1
+
+nano output_chr4_T1.map
+
+plink --file output_chr4_T1 --allow-extra-chr --maf 0.05 --make-bed --out output_chr4_T1_filtered
+
+plink --bfile output_chr4_T1_filtered --allow-extra-chr --r2 --ld-snp 98879403 --ld-window 9999999 --out ld_results_filtered
+
+
+
+###CHROMOSOME 4:
+bcftools view -r NC_056626.1 -S samples.txt /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056626.1.vcf.gz
+
+bcftools index extracted_region_NC_056626.1.vcf.gz
+
+bcftools query -f '%CHROM %POS %ID %REF %ALT %QUAL %FILTER %INFO/AF\n' NC_056626.1.vcf.gz > NC_056626.1.csv
+
+
+
+
