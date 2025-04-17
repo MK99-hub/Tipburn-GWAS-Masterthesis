@@ -1,0 +1,109 @@
+library(openxlsx)
+library(readxl)
+library(tidyverse)
+# Example data: Replace this with your actual data frame
+# Ensure your data has columns: CHR (chromosome), POS_adjusted (position in bp), lod_wn (LOD score), trait (phenotype)
+# data <- data.frame(
+#   CHR = c(1, 1, 2, 2, 3, 3),
+#   POS_adjusted = c(1000000, 2000000, 500000, 1500000, 1000000, 3000000),
+#   lod_wn = c(2.5, 3.0, 1.8, 2.0, 3.2, 2.7),
+#   trait = c("Trait1", "Trait1", "Trait2", "Trait2", "Trait3", "Trait3")
+# )
+
+df_all_traits <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/Data/Data GWAS/LK_3_2_TipBurn_Sat_20240621/ All_Traits_TopSummaryStats.xlsx")
+
+# Define chromosome lengths in bp (adjust as per your data)
+chromosome_lengths <- data.frame(
+  CHR = 1:9,  # Adjust this according to your chromosome numbers
+  length_bp = c(252000000, 236000000, 325000000, 410000000, 372000000, 207000000, 210000000, 344000000, 230000000)  # Replace with actual lengths in base pairs
+)
+
+# Merge the lengths with the data
+data <- merge(df_all_traits, chromosome_lengths, by = "CHR")
+
+# Normalize positions by dividing by 1e6 to convert to Mbp
+data <- data %>% mutate(POS_adjusted_Mbp = POS / 1e6)
+
+data <- data %>% mutate(LOD_adjusted = lod / 10000)
+
+filtered_data <- subset(data, LOD_adjusted >= 6.5)
+
+
+# Create the plot
+ggplot(filtered_data, aes(x = POS_adjusted_Mbp, y = trait, color = LOD_adjusted)) +
+  geom_point(size = 2) +
+  scale_color_gradient(low = "green", high = "red") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(color = "gray50", fill = "gray90"),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "gray50", fill = NA, size = 0.5)
+  ) +
+  facet_wrap(~ CHR, nrow = 1, scales = "free_x") + 
+  labs(
+    x = "Position (Mbp)",
+    y = "Phenotype",
+    color = "LOD"
+  ) +
+  # Set x-axis limits based on chromosome lengths
+  geom_blank(aes(x = length_bp / 1e6)) + # Sets x-axis to expand up to length_bp
+  scale_x_continuous(
+    breaks = function(x) seq(0, max(x, na.rm = TRUE), by = 100), # Tick marks at 50 Mbp
+    limits = c(0, NA)
+    ) # This ensures that each facet respects the chromosome length
+
+#Now only one chromosome:
+
+filtered_data <- data %>%
+  filter(CHR == 9)
+
+ggplot(filtered_data, aes(x = POS_adjusted_Mbp, y = trait, color = lod/10000)) +
+  geom_point(size = 2) +
+  scale_color_gradient(low = "green", high = "red") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(color = "gray50", fill = "gray90"),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "gray50", fill = NA, size = 0.5)
+  ) +
+  facet_wrap(~ CHR, nrow = 1, scales = "free_x") + 
+  labs(
+    x = "Position (Mbp)",
+    y = "Phenotype",
+    color = "LOD"
+  ) +
+  # Set x-axis limits based on chromosome lengths
+  geom_blank(aes(x = length_bp / 1e6))  # This ensures that each facet respects the chromosome length
+
+png("MEGA GWAS test2.png", width = 40, height = 30, units = 'cm', res = 500)
+ggplot(filtered_data, aes(x = POS_adjusted_Mbp, y = trait, color = LOD_adjusted)) +
+  geom_point(size = 2) +
+  scale_color_gradient(low = "green", high = "red") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(color = "gray50", fill = "gray90"),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "gray50", fill = NA, size = 0.5)
+  ) +
+  facet_wrap(~ CHR, nrow = 1, scales = "free_x") + 
+  labs(
+    x = "Position (Mbp)",
+    y = "Phenotype",
+    color = "LOD"
+  ) +
+  # Set x-axis limits based on chromosome lengths
+  geom_blank(aes(x = length_bp / 1e6)) + # Sets x-axis to expand up to length_bp
+  scale_x_continuous(
+    breaks = function(x) seq(0, max(x, na.rm = TRUE), by = 100), # Tick marks at 50 Mbp
+    limits = c(0, NA)
+  ) # This ensures that each facet respects the chromosome length
+dev.off()
+
+
+
