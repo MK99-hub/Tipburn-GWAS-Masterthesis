@@ -1,0 +1,18 @@
+# extract region:
+bcftools view /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz --regions chr1:1000000-2000000 > extracted_region.vcf
+
+#compress region
+bgzip extracted_region.vcf
+
+tabix -p vcf extracted_region.vcf.gz
+
+bcftools view extracted_region.vcf.gz --regions NC_056626.1:32413308-33913308 > output_region.vcf.gz
+
+bcftools view -h output.vcf.gz
+
+bcftools view -q 0.1:minor output.vcf.gz > filtered_snps.vcf.gz
+
+bcftools query -f '%CHROM %POS %ID %REF %ALT %QUAL %FILTER %INFO/AF\n' filtered_snps.vcf.gz > filtered_snps_NC_056623.1:8887939-10387939.csv
+
+head -n 5 filtered_snps_NC_056623.1:8887939-10387939.csv
+
