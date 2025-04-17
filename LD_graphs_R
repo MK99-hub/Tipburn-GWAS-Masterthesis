@@ -1,0 +1,204 @@
+---
+title: "LD"
+author: "Mara Krenn"
+date: "2024-12-06"
+output: word_document
+---
+
+```{r packages}
+install.packages("ggplot2") 
+install.packages("reshape2")
+install.packages("dplyr")
+install.packages("readxl")
+library(ggplot2) 
+library(reshape2)
+library(dplyr)
+library(readxl)
+
+```
+
+```{r import data Chr 7}
+ld_data<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_results SNP specific/ld_results_NC_056629.1_164429752-164509752.ld", header = TRUE) 
+
+
+
+```
+
+
+```{r visualizing Chr 7 bigger region}
+
+ggplot(ld_data, aes(x = BP_B, y = R2)) +
+  geom_point(shape = 1, color = "darkgrey", size = 1.5) +       # Line plot
+  labs(
+    x = "BP_B",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of 164469752")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+
+
+```
+
+```{r visualizing Chr 7 even bigger region}
+ld_data_7<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/ld_results/ld_results_NC_056629.1_163719752-165219752.ld", header = TRUE) 
+
+
+ggplot(ld_data_7, aes(x = BP_B, y = R2)) +
+  geom_point(shape = 1, color = "darkgrey", size = 1.5) +       # Line plot
+  labs(
+    x = "Chromosome position",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of QTL 7 (Highest SNP 164469752)")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+
+
+```
+
+```{r filter for significant SNPs}
+ld_data_7_sigSNPs<- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Trial 2 Chr 7/Sig.SNP_Chr7.xlsx") 
+
+combined_column <- c(as.matrix(ld_data_7_sigSNPs))
+df_combined <- data.frame(Combined = combined_column)
+
+merged_df <- merge(ld_data_7, df_combined, by.x = "BP_B", by.y = "Combined")
+
+ggplot(merged_df, aes(x = BP_B, y = R2)) +
+  geom_point(shape = 1, color = "darkgrey", size = 1.5) +       # Line plot
+  labs(
+    x = "Chromosome position",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of QTL 7 (Highest SNP 164469752) with only sig SNPs")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+
+
+```
+
+```{r combine sig. and not sig. SNPs of Chr. 7}
+ld_data_7<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/ld_results/ld_results_NC_056629.1_163719752-165219752.ld", header = TRUE) 
+
+ld_data_7_sigSNPs<- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Trial 2 Chr 7/Sig.SNP_Chr7.xlsx") 
+
+combined_column <- c(as.matrix(ld_data_7_sigSNPs))
+df_combined <- data.frame(Combined = combined_column)
+
+merged_df <- merge(ld_data_7, df_combined, by.x = "BP_B", by.y = "Combined")
+
+merged_sig_nonsig_SNP <- merge(ld_data_7, merged_df, by = "BP_B", all = TRUE)
+
+merged_sig_nonsig_SNP <- merged_sig_nonsig_SNP %>%
+  mutate(sig_status = ifelse(!is.na(R2.y), "Significant SNP", "Non-significant SNP"))
+
+merged_sig_nonsig_SNP <- merged_sig_nonsig_SNP[order(merged_sig_nonsig_SNP$sig_status == "Significant SNP"), ]
+
+
+QTL_7 <- ggplot(merged_sig_nonsig_SNP, aes(x = BP_B/1E6, y = R2.x)) +
+  geom_point(shape = 1, aes(color = sig_status), size = 1.5) +  # Map `color` to the group
+  scale_color_manual(values = c("Non-significant SNP" = "darkgrey", "Significant SNP" = "#D55E00")) +  # Define colors
+  labs(color = NULL) +
+  labs(
+    x = "Position in Mbp",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of QTL 7 (Highest SNP 164469752)")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+QTL_7
+
+# Save as PNG (for reports)
+  ggsave(plot = QTL_7,
+         filename = "/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_QTL7.png",
+         width = 16, height = 8, units = "cm", dpi = 300)
+
+```
+
+
+```{r Chr 4 trial 1}
+ld_data_Chr4_T1<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_results SNP specific/ld_results_NC_056626.1_98129403-99629403.ld", header = TRUE) 
+
+ggplot(ld_data_Chr4_T1, aes(x = BP_B, y = R2)) +
+  geom_point(shape = 1, color = "darkgrey", size = 1.5) +       # Line plot
+  labs(
+    x = "Chromosome position",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("R2 of QTL 4 (Highest SNP 98879403)")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+```
+
+```{r Chr 4 trial 1_highlight significant SNPs}
+ld_data_4<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_results SNP specific/ld_results_NC_056626.1_98129403-99629403.ld", header = TRUE) 
+
+ld_data_4_sigSNPs<- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Trial 1 Chr 4/Sig.SNP_Chr4.xlsx") 
+
+combined_column <- c(as.matrix(ld_data_4_sigSNPs))
+df_combined <- data.frame(Combined = combined_column)
+
+merged_df <- merge(ld_data_4, df_combined, by.x = "BP_B", by.y = "Combined")
+
+merged_sig_nonsig_SNP4 <- merge(ld_data_4, merged_df, by = "BP_B", all = TRUE)
+
+merged_sig_nonsig_SNP4 <- merged_sig_nonsig_SNP %>%
+  mutate(sig_status = ifelse(!is.na(R2.y), "Significant SNP", "Non-significant SNP"))
+
+QTL_4 <- ggplot(merged_sig_nonsig_SNP4, aes(x = BP_B/1E6, y = R2.x)) +
+  geom_point(shape = 1, aes(color = sig_status), size = 1.5) +  # Map `color` to the group
+  scale_color_manual(values = c("Non-significant SNP" = "darkgrey", "Significant SNP" = "#D55E00")) +  # Define colors
+  labs(color = NULL) +
+  labs(
+    x = "Position in Mbp",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of QTL 7 (Highest SNP 164469752)")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+QTL_4
+
+# Save as PNG (for reports)
+  ggsave(plot = QTL_4,
+         filename = "/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_QTL4.png",
+         width = 16, height = 8, units = "cm", dpi = 300)
+
+```
+
+```{r Chr4 Trial 2}
+ld_data_Chr4_T2<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_results SNP specific/ld_results_NC_056626.1_15094819-15174819.ld", header = TRUE) 
+
+ggplot(ld_data_Chr4_T2, aes(x = BP_B, y = R2)) +
+  geom_point(color = "blue", size = 0.5) +       # Line plot
+  labs(
+    x = "BP_B",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of 15134819")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+```
+
+
+```{r Chr 9}
+ld_data_Chr9_T2<- read.table("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/LD/LD_results SNP specific/ld_results_NC_056631.1_31390988-31470988.ld", header = TRUE) 
+
+ggplot(ld_data_Chr9_T2, aes(x = BP_B, y = R2)) +
+  geom_point(color = "blue", size = 0.5) +       # Line plot
+  labs(
+    x = "BP_B",                               # X-axis label
+    y = "R2",                                 # Y-axis label
+    title = paste("LD of 31430988")             # Dynamic title
+  ) +
+  theme_minimal() 
+
+```
+
+
+
+
+
+
+
+
