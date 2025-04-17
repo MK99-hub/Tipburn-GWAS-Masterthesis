@@ -1,0 +1,137 @@
+---
+title: "Filtering SNPs for MAF"
+author: "Mara Krenn"
+date: "2024-11-26"
+output: html_document
+---
+
+```{r packages}
+library(openxlsx)
+library(readxl)
+library(tidyverse)
+```
+
+
+```{r Putting data together}
+
+setwd("~/OneDrive - Wageningen University & Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server")
+
+df_Chr1_SNPs <- read.csv("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server/filtered_snps_NC_056623.1:8887939-10387939.csv", sep = " ", header = FALSE)
+colnames(df_Chr1_SNPs) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "alt_allele_frequency")
+df_Chr1_SNPs$CHR <- 1
+
+df_Chr3_SNPs <- read.csv("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server/filtered_snps_NC_056625.1:107055320-108555320.csv", sep = " ", header = FALSE)
+colnames(df_Chr3_SNPs) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "alt_allele_frequency")
+df_Chr3_SNPs$CHR <- 3
+
+df_Chr4_1_SNPs <- read.csv("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server/filtered_snps_NC_056626.1:14384819-15884819.csv", sep = " ", header = FALSE)
+colnames(df_Chr4_1_SNPs) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "alt_allele_frequency")
+df_Chr4_1_SNPs$CHR <- 4
+
+df_Chr4_2_SNPs <- read.csv("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server/filtered_snps_NC_056626.1:98129403-99629403.csv", sep = " ", header = FALSE)
+colnames(df_Chr4_2_SNPs) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "alt_allele_frequency")
+df_Chr4_2_SNPs$CHR <- 4
+
+df_Chr7_SNPs <- read.csv("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server/filtered_snps_NC_056629.1:163719752-165219752.csv", sep = " ", header = FALSE)
+colnames(df_Chr7_SNPs) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "alt_allele_frequency")
+df_Chr7_SNPs$CHR <- 7
+
+row <- df_Chr7_SNPs[df$POS == "164469752", ]
+print(row)
+
+df_Chr9_SNPs <- read.csv("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/QTL-Analysis/Allele Analysis/Output server/filtered_snps_NC_056631.1:30680988-32180988.csv", sep = " ", header = FALSE)
+colnames(df_Chr9_SNPs) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "alt_allele_frequency")
+df_Chr9_SNPs$CHR <- 9
+
+combined_df <- rbind(df_Chr1_SNPs, df_Chr3_SNPs, df_Chr4_1_SNPs, df_Chr4_2_SNPs, df_Chr7_SNPs, df_Chr9_SNPs)
+
+df_sig_SNPs <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/Data/Data GWAS/LK_3_2_TipBurn_Sat_20240621/ All_Traits_TopSummaryStats.xlsx")
+
+```
+
+
+
+
+```{r creating a MEGA GWAS}
+chromosome_lengths <- data.frame(
+  CHR.x = 1:9,  # Adjust this according to your chromosome numbers
+  length_bp = c(252000000, 236000000, 325000000, 410000000, 372000000, 207000000, 210000000, 344000000, 230000000)  # Replace with actual lengths in base pairs
+)
+
+# Merge the lengths with the data
+data <- merge(df_sigSNP_highMAF, chromosome_lengths, by = "CHR.x")
+
+# Normalize positions by dividing by 1e6 to convert to Mbp
+data <- data %>% mutate(POS_adjusted_Mbp = POS / 1e6)
+
+data <- data %>% mutate(LOD_adjusted = lod / 10000)
+
+filtered_data <- subset(data, LOD_adjusted >= 6)
+
+chromosome_reference <- data.frame(
+  CHR.x = factor(1:9, levels = 1:9), # Replace with actual chromosome names if necessary
+  POS_adjusted_Mbp = NA,             # Placeholder for position
+  trait = "iTB_quant_sat_2_69",                        # Placeholder for phenotype/trait
+  LOD_adjusted = NA,
+  Count1 = NA,
+  POS = NA,
+  v11.chr = NA,
+  lod = NA,
+  lod2 = NA,
+  CHR.y = NA,
+  alt_allele_frequency = NA,
+  v11.est = NA
+)
+
+chromosome_reference <- merge(chromosome_reference, chromosome_lengths, by = "CHR.x")
+
+filtered_data_complete <- rbind(filtered_data, chromosome_reference)
+
+ggplot(filtered_data_complete, aes(x = POS_adjusted_Mbp, y = trait, color = LOD_adjusted)) +
+  geom_point(size = 2, na.rm = TRUE) + # Ignore NA points for plotting
+  scale_color_gradient(low = "green", high = "red") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(color = "gray50", fill = "gray90"),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "gray50", fill = NA, size = 0.5)
+  ) +
+  facet_wrap(~ CHR.x, nrow = 1, scales = "free_x") + 
+  labs(
+    x = "Position (Mbp)",
+    y = "Phenotype",
+    color = "LOD"
+  ) +
+  geom_blank(aes(x = length_bp / 1e6)) + # Sets x-axis to expand up to length_bp
+     scale_x_continuous(
+    breaks = function(x) seq(0, max(x, na.rm = TRUE), by = 100), # Tick marks at 50 Mbp
+    limits = c(0, NA)     # Breaks at 50 Mbp interval # Add "Mbp" to labels
+  )
+
+png("MEGA GWAS test.png", width = 40, height = 30, units = 'cm', res = 500)
+ggplot(filtered_data_complete, aes(x = POS_adjusted_Mbp, y = trait, color = LOD_adjusted)) +
+  geom_point(size = 2, na.rm = TRUE) + # Ignore NA points for plotting
+  scale_color_gradient(low = "green", high = "red") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(color = "gray50", fill = "gray90"),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "gray50", fill = NA, size = 0.5)
+  ) +
+  facet_wrap(~ CHR.x, nrow = 1, scales = "free_x") + 
+  labs(
+    x = "Position (Mbp)",
+    y = "Phenotype",
+    color = "LOD"
+  ) +
+  geom_blank(aes(x = length_bp / 1e6)) + # Sets x-axis to expand up to length_bp
+     scale_x_continuous(
+    breaks = function(x) seq(0, max(x, na.rm = TRUE), by = 100), # Tick marks at 50 Mbp
+    limits = c(0, NA)     # Breaks at 50 Mbp interval # Add "Mbp" to labels
+  )
+  dev.off()
+```
