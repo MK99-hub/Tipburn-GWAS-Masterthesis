@@ -1,4 +1,21 @@
+###What worked in the end:
+#Bsp: 1.5 Mbp: NC_056626.1:98129403-99629403 98879403
+#samples.txt file is a txt file containing all cultivars used and has to saved in the same wd
 
+bcftools view -r NC_056626.1:98129403-99629403  -S samples.txt /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz -Oz -o extracted_region_NC_056626.1:98129403-99629403.vcf.gz
+
+bcftools index extracted_region_NC_056626.1:98129403-99629403.vcf.gz
+
+plink --vcf extracted_region_NC_056626.1:98129403-99629403.vcf.gz --allow-extra-chr --recode --out output_chr4_T1
+
+nano output_chr4_T1.map
+
+plink --file output_chr4_T1 --allow-extra-chr --maf 0.05 --make-bed --out output_chr4_T1_filtered
+
+plink --bfile output_chr4_T1_filtered --allow-extra-chr --r2 --ld-snp 98879403 --ld-window 9999999 --out ld_results_filtered
+
+###------------------------------------
+#What did not work:
 #Data: 
 /lustre/BIF/nobackup/lettuceknow/YODA/research-lettuceknow/processed_data/03_variant-calling_V1_20220621/combined_vcf/LK001_399_variantcalling_merged.vcf.gz
 
