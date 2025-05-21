@@ -1,7 +1,6 @@
 library(openxlsx)
 library(readxl)
 library(tidyverse)
-# Example data: Replace this with your actual data frame
 # Ensure your data has columns: CHR (chromosome), POS_adjusted (position in bp), lod_wn (LOD score), trait (phenotype)
 # data <- data.frame(
 #   CHR = c(1, 1, 2, 2, 3, 3),
@@ -12,7 +11,7 @@ library(tidyverse)
 
 df_all_traits <- read_excel("/Users/marakrenn/Library/CloudStorage/OneDrive-WageningenUniversity&Research/Masterthesis/Data/Data GWAS/LK_3_2_TipBurn_Sat_20240621/ All_Traits_TopSummaryStats.xlsx")
 
-# Define chromosome lengths in bp (adjust as per your data)
+# Define chromosome lengths in bp
 chromosome_lengths <- data.frame(
   CHR = 1:9,  # Adjust this according to your chromosome numbers
   length_bp = c(252000000, 236000000, 325000000, 410000000, 372000000, 207000000, 210000000, 344000000, 230000000)  # Replace with actual lengths in base pairs
@@ -26,10 +25,11 @@ data <- data %>% mutate(POS_adjusted_Mbp = POS / 1e6)
 
 data <- data %>% mutate(LOD_adjusted = lod / 10000)
 
+#Filter for LOD>6.5
 filtered_data <- subset(data, LOD_adjusted >= 6.5)
 
 
-# Create the plot
+#Creating the plot
 ggplot(filtered_data, aes(x = POS_adjusted_Mbp, y = trait, color = LOD_adjusted)) +
   geom_point(size = 2) +
   scale_color_gradient(low = "green", high = "red") +
@@ -54,8 +54,7 @@ ggplot(filtered_data, aes(x = POS_adjusted_Mbp, y = trait, color = LOD_adjusted)
     limits = c(0, NA)
     ) # This ensures that each facet respects the chromosome length
 
-#Now only one chromosome:
-
+###For only one chromosome:
 filtered_data <- data %>%
   filter(CHR == 9)
 
